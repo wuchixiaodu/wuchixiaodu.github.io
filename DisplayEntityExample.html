@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8"/>
+    <title>Display an entity</title>
+    <script type="text/javascript" src="kendo/js/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+    <script type="text/javascript" src="GraphDB.js"></script>
+    <script type="text/javascript" src="diverse/jquery.wikiblurb.js"></script>
+    <script src="diverse/jquery.toaster.js"></script>
+    <style>
+        .output {
+            margin: 20px 58px 49px 58px;
+            background-color: rgb(239, 250, 255);
+            border: 1px solid rgb(142, 176, 186);
+            border-radius: 5px;
+            padding: 10px;
+            width: 510px;
+        }
+
+        .main {
+            min-height: 100%;
+            height: auto;
+            margin: 20px;
+        }
+
+        input {
+            margin-left: 10px;
+            width: 350px;
+            outline: none;
+            padding: 3px;
+        }
+
+        .banner {
+            background-color: dimgrey;
+            height: 60px;
+            color: white;
+            padding: 17px;
+            font-size: 20px;
+        }
+
+        html, body {
+            margin: 0px;
+            height: 100%;
+        }
+
+        footer {
+
+            background-color: dimgrey;
+            height: 50px;
+        }
+
+        #addButton {
+            float: right;
+            margin: -3px 70px 0 0px;
+            width: 150px;
+        }
+    </style>
+</head>
+<body>
+<div class="banner">Get a random entity from GraphDB</div>
+<div class="main">
+    <div style="display: block; height: 27px; margin-left: 47px;">
+        <div id="removeButton" class="btn btn-default" style="float:left; margin-left:10px;">Delete this entity</div>
+    </div>
+    <div id="results" class="output"></div>
+
+</div>
+
+<footer class="footer" class="navbar-fixed-bottom">
+
+</footer>
+<script type="text/javascript">
+
+    var currentId;
+    var getUrlParameter = function getUrlParameter(sParam) {
+        var sPageURL = decodeURIComponent(window.location.search.substring(1)),
+                sURLVariables = sPageURL.split('&'),
+                sParameterName,
+                i;
+
+        for(i = 0; i < sURLVariables.length; i++) {
+            sParameterName = sURLVariables[i].split('=');
+
+            if(sParameterName[0] === sParam) {
+                return sParameterName[1] === undefined ? true : sParameterName[1];
+            }
+        }
+    };
+    function htmlDecode(value) {
+        return $('<div/>').html(value).text();
+    }
+
+    $("#removeButton").click(function() {
+        $.when(GraphDB.deleteEntity(currentId)).then(function(entity) {
+            $.toaster({
+                title: 'Removed',
+                priority: 'success',
+                message: 'This entity has been deleted.',
+                settings: toastSettings
+            });
+            getOne();
+        });
+
+    });
+
+    var getOne = function() {
+        $.when(GraphDB.getEntity(currentId)).then(function(entity) {
+            currentId = entity.Id;
+            var type = entity.Properties.$type$;
+            switch(type) {
+                case "Thought":
+                    $("#results").html("<h3>" + entity.Title + "</h3><p>" + htmlDecode(entity.Description) + "</p><p style=\"font-size:10px;\">Entity id: " + entity.Id + "</p>");
+                    break;
+                case "Person":
+                    $("#results").html("<label>First name: </label>" + entity.FirstName);
+                    break;
+                default:
+                    $("#results").html("Entity type '" + type + "' is not handled yet.");
+            }
+
+        });
+    }
+
+    $(document).ready(function() {
+        currentId = getUrlParameter("id");
+        getOne();
+    });
+
+    var toastSettings = {
+        'toaster': {
+            'id': 'TheToast',
+            'container': 'body',
+            template: "<div></div>",
+            'css': {
+                'position': 'fixed',
+                'bottom': '30px',
+                'left': '0px',
+                'width': '100%',
+                'zIndex': 50000
+            }
+        },
+        'toast': {
+            'template': '<div class="alert alert-%priority% alert-dismissible" role="alert">' +
+            '<button type="button" class="close" data-dismiss="alert">' +
+            '<span aria-hidden="true">&times;</span>' +
+            '<span class="sr-only">Close</span>' +
+            '</button>' +
+            '<span class="title"></span>: <span class="message"></span>' +
+            '</div>',
+
+            'css': {
+                'corner-radius': '0px'
+            },
+            'cssm': {},
+            'csst': {'fontWeight': 'bold'},
+
+            'fade': 'slow',
+
+            'display': function($toast) {
+                return $toast.fadeIn(500);
+            },
+
+            'remove': function($toast, callback) {
+                return $toast.animate(
+                        {
+                            opacity: '0',
+                            padding: '10px',
+                            margin: '10px',
+                            height: '30px'
+                        },
+                        {
+                            duration: 500,
+                            complete: null
+                        }
+                );
+            }
+        },
+        'debug': false,
+        'timeout': 2000,
+        'stylesheet': null,
+        'donotdismiss': []
+    };
+</script>
+</body>
+</html>
